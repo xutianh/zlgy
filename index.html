@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+    <head>
+        <title>XUTIANH</title>
+        <meta charset="UTF-8">
+        <style>
+            .stage{
+                perspective: 1000px;
+                width: 200px;
+                height: 200px;
+                left: 50%;
+                top: 50%;
+                margin-left: -100px;
+                margin-top: -100px;
+                position: absolute;
+            }
+            .cube{
+                position: absolute;
+                width: 100%;
+                height: 100%;
+                transform-style: preserve-3d;
+                /* transform: rotateX(-20deg) rotateY(-20deg); */
+            }
+            .cube > div{
+                position: absolute;
+                width: 100%;
+                height: 100%;
+                line-height: 200px;
+                font-size: 100px;
+                text-align: center;
+                border: 2px solid #000;
+            }
+            .font{
+                transform: translateZ(100px);
+                background: rgba(0,184,230,0.5);
+            }
+            .back{
+                transform: translateZ(-100px);
+                background: rgba(255,0,0,0.5);
+            }
+            .left{
+                transform: rotateY(-90deg) translateZ(100px);
+                background: rgba(204,240,204,0.5);
+            }
+            .right{
+                transform: rotateY(90deg) translateZ(100px);
+                background: rgba(255,166,33,0.5);
+            }
+            .top{
+                transform: rotateX(90deg) translateZ(100px);
+                background: rgba(0,184,0,0.5);
+            }
+            .bottom{
+                transform: rotateX(-90deg) translateZ(100px);
+                background: rgba(204,155,106,0.5);
+            }
+        </style>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.0.3/socket.io.js"></script>
+    </head>
+    <body>
+        <div id="lifangti">
+            <div class="stage">
+                <div class="cube">
+                    <div class="font">前</div>
+                    <div class="back">后</div>
+                    <div class="left">左</div>
+                    <div class="right">右</div>
+                    <div class="top">上</div>
+                    <div class="bottom">下</div>
+                </div>
+            </div>
+        </div>
+
+        <p class="output"></p>
+
+        <!-- 
+            重力感应的事件名叫做 devicemotion ，
+            倾斜的角度是通过
+            event.accelerationIncludingGravity.x 和 
+            event.accelerationIncludingGravity.y 来访问。
+         -->
+        <script>
+            var socket = io('http://192.168.1.102:3000');
+
+            window.addEventListener("deviceorientation",handleOrientation,true);
+            var output = document.querySelector('.output');
+            var cube = document.querySelector('.cube');
+
+//            socket.on('enter', function (data) {
+//                output.innerHTML  = "data : " + data + "<br>";
+//            });
+
+
+            var alpha = 0;
+            var beta = 0;
+            var gamma = 0;
+            var rotate = null;
+            if(window.screen.width > 800){
+                socket.on('alpha', function (data) {
+                    alpha = data;
+                });
+
+                socket.on('beta', function (data) {
+                    beta = data;
+                });
+
+                socket.on('gamma', function (data) {
+                    gamma = data;
+                    cube.style.WebkitTransform="rotateX("+beta+"deg) rotateY("+gamma+"deg) rotateZ("+alpha+"deg)";
+                });
+
+            }
+            if(window.screen.width < 800){
+                function handleOrientation(orientData) {
+                    var absolute = orientData.absolute;
+                    var alpha = orientData.alpha; //表示设备沿z轴上的旋转角度，范围为0~360
+                    var beta = orientData.beta; //表示设备在x轴上的旋转角度，范围为-180~180。它描述的是设备由前向后旋转的情况
+                    var gamma = orientData.gamma; //表示设备在y轴上的旋转角度，范围为-90~90。它描述的是设备由左向右旋转的情况
+
+                    cube.style.WebkitTransform="rotateX("+beta+"deg) rotateY("+gamma+"deg) rotateZ("+alpha+"deg)";
+
+                    if (beta >  90) { beta =  90};
+                    if (beta < -90) { beta = -90};
+
+                    beta += 90;
+                    gamma += 90;
+
+//                    output.innerHTML  = "alpha : " + alpha + "<br>";
+//                    output.innerHTML  += "beta : " + beta + "<br>";
+//                    output.innerHTML  += "gamma : " + gamma + "<br>";
+
+                    socket.emit('alpha', alpha);
+                    socket.emit('beta', beta);
+                    socket.emit('gamma', gamma);
+                }
+            }
+        </script>
+    </body>
+</html>
